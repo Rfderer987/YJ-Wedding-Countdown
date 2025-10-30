@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Countdown to August 30, 2026 — Sydney Time</title>
+  <meta name="description" content="A clean, single‑file countdown to August 30, 2026 in Australia/Sydney timezone. Ready for GitHub Pages." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b0f1a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #f87171; /* soft red to nod to your brand palette */
+      --ring: rgba(248,113,113,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background: radial-gradient(1200px 800px at 80% -20%, #1f2937 0%, var(--bg) 60%) fixed;
+      color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      display:grid; place-items:center; padding:24px;
+    }
+    .wrap{width:min(1000px,100%); text-align:center}
+    header{margin-bottom:28px}
+    h1{margin:.1rem 0 .25rem; font-weight:700; letter-spacing:.3px; font-size:clamp(24px,3.2vw,36px)}
+    .sub{color:var(--muted); font-weight:400; font-size:clamp(14px,1.6vw,16px)}
+
+    .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:24px 0}
+    @media (max-width:700px){ .grid{grid-template-columns:repeat(2,1fr)} }
+
+    .card{
+      background:linear-gradient(180deg, #0f172a 0%, var(--card) 100%);
+      border-radius:18px; padding:18px 16px; box-shadow:0 10px 25px rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,.03) inset;
+      position:relative; isolation:isolate;
+    }
+    .card::after{content:""; position:absolute; inset:-2px; border-radius:20px; pointer-events:none; box-shadow:0 0 0 0 var(--ring); transition:box-shadow .5s ease}
+    .card.pulse::after{box-shadow:0 0 0 8px var(--ring)}
+
+    .value{font-size:clamp(40px,9vw,80px); font-weight:700; line-height:1; letter-spacing:1px}
+    .label{margin-top:6px; color:var(--muted); text-transform:uppercase; font-size:12px; letter-spacing:.2em}
+
+    .footer{margin-top:22px; color:var(--muted); font-size:14px}
+    .pill{display:inline-flex; align-items:center; gap:.5ch; padding:6px 10px; border-radius:999px; background:#0f172a; border:1px solid rgba(255,255,255,.06); color:#cbd5e1}
+    .dot{width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 6px var(--ring)}
+
+    .celebrate{display:none; margin-top:20px; font-size:clamp(20px,3vw,28px); font-weight:700; color:#fef3c7}
+    .show{display:block}
+    a{color:#fca5a5}
+
+    /* tiny print */
+    .note{margin-top:10px; font-size:12px; color:#94a3b8}
+  </style>
+</head>
+<body>
+  <main class="wrap" role="main">
+    <header>
+      <div class="pill" aria-hidden="true"><span class="dot"></span><span>Australia/Sydney</span></div>
+      <h1>Countdown to August 30, 2026</h1>
+      <p class="sub">Ticking down to <strong>Aug 30, 2026, 12:00 AM</strong> Sydney time (AEST/AEDT aware).</p>
+    </header>
+
+    <section class="grid" aria-live="polite" aria-atomic="true">
+      <div class="card" id="card-days"><div class="value" id="days">–</div><div class="label">Days</div></div>
+      <div class="card" id="card-hours"><div class="value" id="hours">–</div><div class="label">Hours</div></div>
+      <div class="card" id="card-mins"><div class="value" id="mins">–</div><div class="label">Minutes</div></div>
+      <div class="card" id="card-secs"><div class="value" id="secs">–</div><div class="label">Seconds</div></div>
+    </section>
+
+    <div id="celebrate" class="celebrate" role="status">🎉 It’s time! Wishing you an amazing day. 🎉</div>
+
+    <p class="footer">This page auto‑adjusts for daylight savings in Sydney. You can change the target date/time or timezone in the code below.</p>
+    <p class="note">Tip: Commit this file as <code>index.html</code> to a public GitHub repo and enable GitHub Pages (Settings → Pages) to publish it.</p>
+  </main>
+
+  <!-- Luxon for robust timezone handling (small, CDN‑hosted) -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js" integrity="sha384-5p5Yw8o3l9x5vHh0UQ4sVq7w3aY3x44t7SLcE3p3dH2c1hAsa5bQ4n+1m9v7q2Gg" crossorigin="anonymous"></script>
+  <script>
+    (function(){
+      const { DateTime, Duration } = luxon;
+
+      // === CONFIG ===
+      const TARGET_TIMEZONE = 'Australia/Sydney';
+      // Change this if you want a specific hour/minute on the day
+      const TARGET_ISO = '2026-08-30T00:00:00'; // local time in TARGET_TIMEZONE
+
+      // DOM elements
+      const elDays = document.getElementById('days');
+      const elHours = document.getElementById('hours');
+      const elMins = document.getElementById('mins');
+      const elSecs = document.getElementById('secs');
+      const celebrate = document.getElementById('celebrate');
+      const pulseCards = [
+        document.getElementById('card-days'),
+        document.getElementById('card-hours'),
+        document.getElementById('card-mins'),
+        document.getElementById('card-secs')
+      ];
+
+      // Target in zone → convert to UTC epoch for stable math
+      const target = DateTime.fromISO(TARGET_ISO, { zone: TARGET_TIMEZONE });
+
+      function update(){
+        const now = DateTime.now();
+        const diff = target.diff(now, ['days','hours','minutes','seconds']).shiftTo('days','hours','minutes','seconds');
+
+        if (diff.toMillis() <= 0){
+          elDays.textContent = '0';
+          elHours.textContent = '0';
+          elMins.textContent = '0';
+          elSecs.textContent = '0';
+          celebrate.classList.add('show');
+          pulse(false);
+          return;
+        }
+
+        const d = Math.floor(diff.days);
+        const h = Math.floor(diff.hours);
+        const m = Math.floor(diff.minutes);
+        const s = Math.floor(diff.seconds);
+
+        elDays.textContent = String(d);
+        elHours.textContent = pad(h);
+        elMins.textContent = pad(m);
+        elSecs.textContent = pad(s);
+
+        // Subtle pulse when a unit rolls over
+        if (s === 59) pulse(true);
+        if (s === 58) pulse(false);
+      }
+
+      function pad(n){ return n < 10 ? '0' + n : '' + n; }
+      function pulse(on){
+        pulseCards.forEach(c => c.classList.toggle('pulse', !!on));
+      }
+
+      // Kick off
+      update();
+      setInterval(update, 1000);
+
+      // Optional: pause timers when tab is hidden to save CPU
+      document.addEventListener('visibilitychange', () => {
+        // nothing needed with setInterval here, but kept for extensibility
+      });
+    })();
+  </script>
+</body>
+</html>
